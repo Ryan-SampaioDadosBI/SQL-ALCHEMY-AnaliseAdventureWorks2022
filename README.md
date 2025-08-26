@@ -1,9 +1,22 @@
 # SQL-ALCHEMY-AnaliseAdventureWorks2022
 Analise de dados da tabela "Production.Product" usando SQLAlchemy, Pandas, e PowerBI 
 
+# Analise de Dados
+Este projeto tem como objetivo analisar dados da tabela Production.Product do banco AdventureWorks 2022, aplicando técnicas de SQLAlchemy (ORM), pandas para manipulação e limpeza dos dados, e Power BI para visualização.
 
+#Banco de Dados AdventureWorks2022
+Este projeto utiliza como fonte de dados o **AdventureWorks 2022**, um banco de dados de exemplo amplamente utilizado para práticas de SQL e análise de dados.  
 
+O banco contém diversas tabelas relacionadas a produtos, vendas, funcionários, clientes e produção. Neste projeto, o foco está na tabela **`Production.Product`**, onde analisamos informações como:
 
+- Identificação do produto (`ProductID` e `ProductNumber`)  
+- Nome do produto (`Name`)  
+- Tempo de fabricação (`DaysToManufacture`)  
+- Custo e preço de venda (`StandardCost` e `ListPrice`)  
+- Peso (`Weight`)  
+- Cor (`Color`)
+- 
+# Requisitos
 ```python
 
 from sqlalchemy import create_engine, MetaData, Table, Column, asc, desc
@@ -17,9 +30,10 @@ import pandas as pd
 import pyodbc
 
 ```
-
-
-# Construindo a Engine Para connectar o Banco de Dados SQL (SSMS) Usando Python (SQLAlchemy)
+# SQL Alchemy
+SQLAlchemy é usado para fazer a ponte entre o banco de dados e python sem a necessidade de usar código SQL "Puro"
+# 1  SQL Alchemy Engine
+Construimos a engine que faz a ponte entre python e o banco de dados com o código
 
 ```python
 server = "DESKTOP-USPUN2G\\SQLEXPRESS"
@@ -28,8 +42,9 @@ connection_url = f"mssql+pyodbc://@{server}/{database}?driver=ODBC+Driver+18+for
 engine = create_engine(connection_url, echo=True)
 
 ```
-# Mapeando Cada Tabela do banco de dados como objetos classe: class.object
 
+# 1.1 SQL Alchemy Automapping
+Neste Código utilizamos o SQLAlchemy Automap para mapear as tabelas do banco de dados como objetos Python. Dessa forma, cada tabela é representada como uma classe, e cada linha da tabela um objeto. (e.g, Product.ListPrice)
 ```python
 Base= automap_base()
 Base.prepare(engine, reflect= True, schema="Production")
@@ -38,8 +53,9 @@ Product = Base.classes.Product
 ProductPhoto = Base.classes.ProductProductPhoto
 
 ```
-# Fazendo a query usando SQL Alchemy
 
+# 1.2 SQL ALchemy Query
+Após mapear, podemos usar o ORM e python para fazer queries
 ```python
 querySql = (
     select(
@@ -56,11 +72,29 @@ querySql = (
 
 )
 
+```
+Este Query no SQL Alchemy usando o ORM seria equivalente a:
+```sql
+SELECT 
+    Product.ProductID,
+    [Name],
+    DaysToManufacture,
+    ProductNumber,
+    StandardCost,
+    [Weight],
+    ListPrice,
+    [Color]
 
 
+FROM
+	Production.Product
+
+INNER JOIN Production.ProductProductPhoto as product_photo
+	on Product.ProductID = product_photo.ProductID
 ```
 
-### E temos essa tabela como resultado das primeiras 15 linhas usando Order by ListPrice DESC
+E que tem como resultado (15 primeiros resultados) com order by(ListPrice) DESC
+
 
 | ProductID | Name                    | DaysToManufacture | ProductNumber | StandardCost | Weight  | ListPrice | Color  |
 |-----------|------------------------|-----------------|---------------|--------------|--------|-----------|--------|
@@ -80,15 +114,17 @@ querySql = (
 | 789       | Road-250 Red, 44       | 4               | BK-R89R-44    | 1518,7864    | 14.77  | 2443,35   | Red    |
 | 790       | Road-250 Red, 48       | 4               | BK-R89R-48    | 1518,7864    | 15.13  | 2443,35   | Red    |
 
-# Rodando a query com alchemy e exportando os resultados como objeto dataframe do pandas (df.pd)
 
+
+# SQL Alchemy Para CSV
+Para transformar o query, em um dataframe (pd.df) usamos para que possa ser feita a limpeza dos dados
 ```python
 product_df = pd.read_sql(querySql, engine)
 
 ```
 
-# Fazendo limpeza de dados usando pandas, substituindo trechos números que possuem vírgulas por pontos e os transformando de string para float
-
+# Limpeza de Dados com Pandas
+Após a extração, números de algumas colunas que separam as casas decimais estão como vírgula ao invés de ponto (virgula é considerado separador em arquivos CSV)
 ```python
 product_df["ListPrice"] = product_df["ListPrice"].astype(str).str.replace(",", ".").astype(float)
 product_df["StandardCost"] = product_df["StandardCost"].astype(str).str.replace(",", ".").astype(float)
@@ -96,16 +132,9 @@ product_df["ProductProfit"] = product_df["ListPrice"] - product_df["StandardCost
 product_df["Color"] = product_df["Color"].fillna("Unknown")
 
 ```
-# Lendo o dataframe e verificando se a limpeza foi feita de forma correta
 
-```python
-df = pd.read_csv("AdventureWorks.csv")
-print(df.sort_values("ProductProfit", ascending=False))
 
-```
-
-# Apos a limpeza dos dados temos essa tabela, e finalmente podemos extrair os dados para CSV
-
+E podemos finalmente verificar se a limpeza dos dados foi feita de forma correta
 | ProductID | Name                    | DaysToManufacture | ProductNumber | StandardCost | Weight  | ListPrice | ProductProfit | Color   |
 |-----------|------------------------|-----------------|---------------|--------------|--------|-----------|---------------|---------|
 | 749       | Road-150 Red, 62       | 4               | BK-R93R-62    | 2171.2942    | 15.00  | 3578.27   | 1407.00       | Red     |
@@ -126,7 +155,10 @@ print(df.sort_values("ProductProfit", ascending=False))
 
 
 
-
-
+# CSV Para PowerBI
+Após realizar a query no banco com SQLAlchemy e carregar os dados em um DataFrame do pandas, podemos exportar o resultado para um arquivo Excel ou CSV. Esse arquivo pode ser importado diretamente no Power BI para criação de dashboards.
+```python
+product_df.to_excel("nome_arquivo.xlsx", index=False)
+```
 
 
